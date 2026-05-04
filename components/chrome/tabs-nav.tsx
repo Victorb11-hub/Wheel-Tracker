@@ -2,16 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { buildTabs } from '@/lib/data/overview-stats';
+import { useFullState } from '@/lib/queries/use-state';
 import { cn } from '@/lib/utils';
 
-interface TabDef {
-  href: string;
-  label: string;
-  count?: number;
-}
-
-export function TabsNav({ tabs }: { tabs: TabDef[] }) {
+// Subscribes to the React Query cache directly. Counts re-derive on every
+// state change — chrome stays in sync with mutations without a route refresh.
+export function TabsNav() {
   const pathname = usePathname();
+  const { data: state } = useFullState();
+  const tabs = state ? buildTabs(state) : [];
+
   return (
     <nav
       className="mb-5 flex gap-2 border-b border-border pb-2"

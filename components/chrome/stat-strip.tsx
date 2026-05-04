@@ -1,3 +1,7 @@
+'use client';
+
+import { buildOverviewStats } from '@/lib/data/overview-stats';
+import { useFullState } from '@/lib/queries/use-state';
 import { cn } from '@/lib/utils';
 
 export interface StatCardProps {
@@ -27,7 +31,13 @@ function StatCard({ label, value, sub, tone = 'neutral' }: StatCardProps) {
   );
 }
 
-export function StatStrip({ cards }: { cards: StatCardProps[] }) {
+// Subscribes to the React Query cache directly. With initialData on
+// useFullState, SSR + client-hydration both render from the seed snapshot,
+// so first paint matches and subsequent mutations re-derive cards live.
+export function StatStrip() {
+  const { data: state } = useFullState();
+  const cards = state ? buildOverviewStats(state) : [];
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
       {cards.map((c) => (
