@@ -19,6 +19,7 @@ import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
 import { CloseTradeModal } from './close-trade-modal';
 import { DeleteTradeModal } from './delete-trade-modal';
 import { EditTradeModal } from './edit-trade-modal';
+import { RollTradeModal } from './roll-trade-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
 import { cn } from '@/lib/utils';
 
@@ -103,6 +104,7 @@ export function AllTradesTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
+  const [rollingId, setRollingId] = useState<string | null>(null);
   const editingTrade = editingId
     ? trades.find((t) => t.id === editingId) ?? null
     : null;
@@ -111,6 +113,9 @@ export function AllTradesTable({
     : null;
   const closingTrade = closingId
     ? trades.find((t) => t.id === closingId) ?? null
+    : null;
+  const rollingTrade = rollingId
+    ? trades.find((t) => t.id === rollingId) ?? null
     : null;
 
   // Symbols dropdown is auto-populated from the data, sorted A→Z.
@@ -245,6 +250,7 @@ export function AllTradesTable({
                   onEdit={() => setEditingId(t.id)}
                   onDelete={() => setDeletingId(t.id)}
                   onClose={() => setClosingId(t.id)}
+                  onRoll={() => setRollingId(t.id)}
                 />
               ))
             )}
@@ -276,6 +282,14 @@ export function AllTradesTable({
         open={closingTrade !== null}
         onOpenChange={(next) => {
           if (!next) setClosingId(null);
+        }}
+      />
+
+      <RollTradeModal
+        trade={rollingTrade}
+        open={rollingTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setRollingId(null);
         }}
       />
     </div>
@@ -350,12 +364,14 @@ function Row({
   onEdit,
   onDelete,
   onClose,
+  onRoll,
 }: {
   t: Trade;
   allTrades: Trade[];
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
+  onRoll: () => void;
 }) {
   const cash = calculateCashRequired(t);
   const ret = calculateReturnPercent(t);
@@ -430,7 +446,9 @@ function Row({
           </button>
           {t.status === 'open' && !isSynthetic && (
             <>
-              <button className={cn(ROW_ACTION, ACTION_HOVER.roll)}>Roll</button>
+              <button className={cn(ROW_ACTION, ACTION_HOVER.roll)} onClick={onRoll}>
+                Roll
+              </button>
               <button className={cn(ROW_ACTION, ACTION_HOVER.close)} onClick={onClose}>
                 Close
               </button>

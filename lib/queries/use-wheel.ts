@@ -5,9 +5,11 @@ import { useDataClient } from './providers';
 import { useInvalidateState } from './use-state';
 import { planClose } from '../wheel/close';
 import { planSellCoveredCall } from '../wheel/covered-call';
+import { planRoll } from '../wheel/roll';
 import type {
   CloseInput,
   PlannerCtx,
+  RollInput,
   SellCoveredCallInput,
   WheelState,
 } from '../wheel/plan';
@@ -57,6 +59,25 @@ export function useSellCoveredCall() {
         groups: full.groups,
       };
       const plan = planSellCoveredCall(input, state, makePlannerCtx());
+      await dataClient.applyPlan(plan);
+    },
+    onSettled: () => invalidate(),
+  });
+}
+
+export function useRollTrade() {
+  const dataClient = useDataClient();
+  const invalidate = useInvalidateState();
+
+  return useMutation({
+    mutationFn: async (input: RollInput) => {
+      const full = await dataClient.getState();
+      const state: WheelState = {
+        trades: full.trades,
+        stocks: full.stocks,
+        groups: full.groups,
+      };
+      const plan = planRoll(input, state, makePlannerCtx());
       await dataClient.applyPlan(plan);
     },
     onSettled: () => invalidate(),
