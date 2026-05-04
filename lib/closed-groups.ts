@@ -54,3 +54,37 @@ export function getClosedGroups(
 ): TradeGroup[] {
   return groups.filter((g) => isGroupClosed(g, trades));
 }
+
+// Predicate used by Create/Manage modals to warn the user before they save a
+// group that the closed-groups rule will hide. Same semantics as
+// isGroupClosed — operates on a candidate trade_ids[] without needing a full
+// TradeGroup. Returns the conflicting trade_ref so the warning can name it.
+export function findHidingRef(
+  tradeIds: string[],
+  trades: Trade[]
+): string | null {
+  if (tradeIds.length === 0) return null;
+  // (a) all members must be non-open; if any is open, the group is "hidden"
+  // for a different reason — not the rule (b) ref conflict — so don't warn here.
+  const anyMemberOpen = tradeIds.some((id) => {
+    const t = trades.find((x) => x.id === id);
+    return t?.status === 'open';
+  });
+  if (anyMemberOpen) return null;
+
+  // Use getGroupRef semantics: first member with non-null ref wins.
+  let ref: string | null = null;
+  for (const id of tradeIds) {
+    const t = trades.find((x) => x.id === id);
+    if (t && t.trade_ref) {
+      ref = t.trade_ref;
+      break;
+    }
+  }
+  if (ref == null) return null;
+
+  const refHasOpenTrade = trades.some(
+    (t) => t.status === 'open' && t.trade_ref === ref
+  );
+  return refHasOpenTrade ? ref : null;
+}

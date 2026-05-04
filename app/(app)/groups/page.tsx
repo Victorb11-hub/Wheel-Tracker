@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { AutoGroupButton } from '@/components/groups/auto-group-button';
+import { CreateGroupModal } from '@/components/groups/create-group-modal';
+import { ManageGroupsModal } from '@/components/groups/manage-groups-modal';
 import { GroupCard } from '@/components/groups/group-card';
 import { Button } from '@/components/ui/button';
 import { computeGroupStats } from '@/lib/group-stats';
@@ -11,6 +14,8 @@ import { useApplyAutoGroup } from '@/lib/queries/use-groups';
 export default function ClosedGroupsPage() {
   const { data: state, isLoading } = useFullState();
   const applyAutoGroup = useApplyAutoGroup();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
 
   if (isLoading || !state) {
     return (
@@ -43,10 +48,27 @@ export default function ClosedGroupsPage() {
             groups={state.groups}
             onConfirm={(plan) => applyAutoGroup.mutate(plan)}
           />
-          <Button variant="secondary" disabled>Create New Group</Button>
-          <Button variant="secondary" disabled>Manage Groups</Button>
+          <Button variant="secondary" onClick={() => setCreateOpen(true)}>
+            Create New Group
+          </Button>
+          <Button variant="secondary" onClick={() => setManageOpen(true)}>
+            Manage Groups
+          </Button>
         </div>
       </div>
+
+      <CreateGroupModal
+        trades={state.trades}
+        groups={state.groups}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
+      <ManageGroupsModal
+        trades={state.trades}
+        groups={state.groups}
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+      />
 
       {applyAutoGroup.isError && (
         <div className="rounded-md border border-debit bg-debit-bg p-3 text-sm text-debit">
