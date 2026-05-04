@@ -29,6 +29,7 @@ export function MutationModal({
   error = null,
   destructive = false,
   contentClassName,
+  hideSubmit = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,6 +45,10 @@ export function MutationModal({
   error?: Error | null;
   destructive?: boolean;
   contentClassName?: string;
+  // Hide the primary submit button entirely. Used by blocked-state confirms
+  // (e.g. a delete that's prevented by referential integrity) where the
+  // dialog's only action is acknowledgment.
+  hideSubmit?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,13 +76,15 @@ export function MutationModal({
           >
             {cancelLabel}
           </Button>
-          <Button
-            variant={destructive ? 'danger' : 'primary'}
-            onClick={() => void onSubmit()}
-            disabled={!canSubmit || isPending}
-          >
-            {isPending ? (pendingLabel ?? `${submitLabel}…`) : submitLabel}
-          </Button>
+          {!hideSubmit && (
+            <Button
+              variant={destructive ? 'danger' : 'primary'}
+              onClick={() => void onSubmit()}
+              disabled={!canSubmit || isPending}
+            >
+              {isPending ? (pendingLabel ?? `${submitLabel}…`) : submitLabel}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

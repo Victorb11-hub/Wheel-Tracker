@@ -8,9 +8,15 @@ import {
   calculatePL,
   calculateReturnPercent,
 } from '@/lib/calculations';
-import type { CustomAccount, Trade } from '@/types/trade';
+import type {
+  CustomAccount,
+  StockPosition,
+  Trade,
+  TradeGroup,
+} from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
+import { DeleteTradeModal } from './delete-trade-modal';
 import { EditTradeModal } from './edit-trade-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
 import { cn } from '@/lib/utils';
@@ -80,9 +86,13 @@ function emptyMessage(status: StatusFilter, symbol: string): string {
 export function AllTradesTable({
   trades,
   accounts,
+  groups,
+  stocks,
 }: {
   trades: Trade[];
   accounts: CustomAccount[];
+  groups: TradeGroup[];
+  stocks: StockPosition[];
 }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [symbolFilter, setSymbolFilter] = useState<string>('all');
@@ -90,8 +100,12 @@ export function AllTradesTable({
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const editingTrade = editingId
     ? trades.find((t) => t.id === editingId) ?? null
+    : null;
+  const deletingTrade = deletingId
+    ? trades.find((t) => t.id === deletingId) ?? null
     : null;
 
   // Symbols dropdown is auto-populated from the data, sorted A→Z.
@@ -224,6 +238,7 @@ export function AllTradesTable({
                   t={t}
                   allTrades={trades}
                   onEdit={() => setEditingId(t.id)}
+                  onDelete={() => setDeletingId(t.id)}
                 />
               ))
             )}
@@ -237,6 +252,16 @@ export function AllTradesTable({
         open={editingTrade !== null}
         onOpenChange={(next) => {
           if (!next) setEditingId(null);
+        }}
+      />
+
+      <DeleteTradeModal
+        trade={deletingTrade}
+        groups={groups}
+        stocks={stocks}
+        open={deletingTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setDeletingId(null);
         }}
       />
     </div>
@@ -309,10 +334,12 @@ function Row({
   t,
   allTrades,
   onEdit,
+  onDelete,
 }: {
   t: Trade;
   allTrades: Trade[];
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const cash = calculateCashRequired(t);
   const ret = calculateReturnPercent(t);
@@ -391,7 +418,9 @@ function Row({
               <button className={cn(ROW_ACTION, ACTION_HOVER.close)}>Close</button>
             </>
           )}
-          <button className={cn(ROW_ACTION, ACTION_HOVER.delete)}>Delete</button>
+          <button className={cn(ROW_ACTION, ACTION_HOVER.delete)} onClick={onDelete}>
+            Delete
+          </button>
         </div>
       </td>
     </tr>

@@ -31,6 +31,7 @@ export default function OpenPositionsPage() {
         stocks={state.stocks}
         closedTrades={closedTrades}
         accounts={state.accounts}
+        groups={state.groups}
       />
     </>
   );

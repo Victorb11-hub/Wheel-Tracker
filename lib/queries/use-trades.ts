@@ -14,3 +14,13 @@ export function useEditTrade() {
     onSettled: () => invalidate(),
   });
 }
+
+export function useDeleteTrade() {
+  const dataClient = useDataClient();
+  const invalidate = useInvalidateState();
+
+  return useMutation({
+    mutationFn: async (id: string) => dataClient.deleteTrade(id),
+    onSettled: () => invalidate(),
+  });
+}
