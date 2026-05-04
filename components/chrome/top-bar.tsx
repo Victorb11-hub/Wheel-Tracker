@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddPositionModal } from '@/components/trades/add-position-modal';
 import { downloadBlob } from '@/lib/export/download';
+import { exportToExcel } from '@/lib/export/to-excel';
 import { exportToJson } from '@/lib/export/to-json';
 import { useFullState } from '@/lib/queries/use-state';
 
@@ -25,6 +26,18 @@ export function TopBar() {
     if (!state) return;
     const { content, filename } = exportToJson(state);
     downloadBlob(content, filename, 'application/json');
+  }
+
+  function handleExportExcel() {
+    if (!state) return;
+    const { content, filename } = exportToExcel(state);
+    downloadBlob(
+      new Blob([content], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+      filename,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
   }
 
   return (
@@ -54,8 +67,8 @@ export function TopBar() {
               Re-expose under a "Recovery" or migration menu if needed.
             */}
             <DropdownMenuLabel>Export</DropdownMenuLabel>
-            <DropdownMenuItem disabled>
-              Export → Excel (coming soon)
+            <DropdownMenuItem onSelect={handleExportExcel} disabled={!state}>
+              Export → Excel
             </DropdownMenuItem>
             <DropdownMenuItem disabled>
               Export → CSV (coming soon)
