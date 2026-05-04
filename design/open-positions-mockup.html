@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Open Positions — Wheel Tracker (mockup)</title>
+  <link rel="stylesheet" href="./tokens.css" />
+  <style>
+    /* ========================================================================
+       Mockup-only styles. In the real app these come from Tailwind utility
+       classes plus a thin layer of component-specific CSS. The point of this
+       file is to lock the visual direction with realistic seed data.
+       ======================================================================== */
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: var(--leading-normal);
+      color: var(--color-text);
+      background: var(--color-bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { font: inherit; cursor: pointer; }
+
+    /* ---- Top chrome ---- */
+    .topbar {
+      height: 56px;
+      padding: 0 var(--space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-weight: var(--weight-semibold);
+      font-size: var(--text-md);
+    }
+    .brand-mark {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      background: var(--color-credit-gradient);
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-fast);
+    }
+    .icon-btn:hover {
+      color: var(--color-text);
+      border-color: var(--color-border-strong);
+    }
+
+    .btn-primary {
+      padding: 0 var(--space-4);
+      height: 36px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--color-credit);
+      color: var(--color-text-on-accent);
+      font-weight: var(--weight-semibold);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      transition: var(--transition-fast);
+    }
+    .btn-primary:hover { filter: brightness(1.06); }
+
+    /* ---- Layout container ---- */
+    .container {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: var(--space-6);
+    }
+
+    /* ---- Stat strip ---- */
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-4) var(--space-5);
+    }
+    .stat-label {
+      font-size: var(--text-xs);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-text-faint);
+      font-weight: var(--weight-medium);
+    }
+    .stat-value {
+      font-size: var(--text-2xl);
+      font-weight: var(--weight-bold);
+      margin-top: var(--space-1);
+      line-height: var(--leading-tight);
+    }
+    .stat-value.is-positive { color: var(--color-credit); }
+    .stat-value.is-negative { color: var(--color-debit); }
+    .stat-sub {
+      margin-top: var(--space-1);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+
+    /* ---- Tabs ---- */
+    .tabs {
+      display: flex;
+      gap: var(--space-2);
+      margin-bottom: var(--space-5);
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: var(--space-2);
+    }
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+      transition: var(--transition-fast);
+    }
+    .tab:hover { color: var(--color-text); background: var(--color-surface); }
+    .tab[aria-selected='true'] {
+      background: var(--color-credit-bg-strong);
+      color: var(--color-credit);
+      border-color: var(--color-credit);
+    }
+    .tab .count {
+      font-size: var(--text-xs);
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      background: var(--color-surface-raised);
+      color: var(--color-text-muted);
+    }
+    .tab[aria-selected='true'] .count {
+      background: var(--color-credit);
+      color: var(--color-text-on-accent);
+    }
+
+    /* ---- Section header ---- */
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: var(--space-6) 0 var(--space-3);
+    }
+    .section-title {
+      font-size: var(--text-lg);
+      font-weight: var(--weight-semibold);
+      letter-spacing: -0.01em;
+    }
+    .section-meta {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+    }
+
+    /* ---- Table ---- */
+    .table-wrap {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    table.trades {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .trades th, .trades td {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    .trades thead th {
+      font-size: var(--text-xs);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-text-faint);
+      font-weight: var(--weight-semibold);
+      background: var(--color-surface-raised);
+      cursor: pointer;
+      user-select: none;
+    }
+    .trades thead th .sort-arrow {
+      display: inline-block;
+      margin-left: var(--space-1);
+      color: var(--color-text-muted);
+    }
+    .trades tbody tr {
+      transition: background var(--transition-fast);
+    }
+    .trades tbody tr:hover { background: var(--color-surface-hover); }
+    .trades tbody tr:last-child td { border-bottom: none; }
+
+    .trades td.num { font-variant-numeric: tabular-nums; text-align: right; }
+    .trades th.num { text-align: right; }
+
+    .symbol-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .symbol-link {
+      color: var(--color-text);
+      font-weight: var(--weight-semibold);
+      text-decoration: none;
+    }
+    .symbol-link:hover { color: var(--color-credit); }
+
+    /* ---- Stock row treatment (orange left border) ---- */
+    .trades tr.stock-row td:first-child {
+      border-left: 3px solid var(--color-assignment);
+    }
+    .trades tr.stock-row { background: var(--color-assignment-bg); }
+    .trades tr.stock-row:hover { background: var(--color-assignment-bg-strong); }
+    .stock-tag {
+      font-size: var(--text-xs);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-assignment);
+      font-weight: var(--weight-semibold);
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* ---- Badges ---- */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+    .badge.action-sell {
+      background: var(--color-credit-bg);
+      color: var(--color-credit);
+    }
+    .badge.action-buy {
+      background: var(--color-debit-bg);
+      color: var(--color-debit);
+    }
+    .badge.type-put {
+      background: var(--color-debit-bg);
+      color: var(--color-debit);
+      border-color: var(--color-debit);
+    }
+    .badge.type-call {
+      background: var(--color-credit-bg);
+      color: var(--color-credit);
+      border-color: var(--color-credit);
+    }
+    .badge.status-open {
+      background: transparent;
+      color: var(--color-credit);
+      border-color: var(--color-credit);
+    }
+    .badge.status-assigned {
+      background: var(--color-assignment-bg);
+      color: var(--color-assignment);
+      border-color: var(--color-assignment);
+    }
+    .badge.rolled {
+      background: var(--color-roll-bg);
+      color: var(--color-roll);
+      border-color: var(--color-roll);
+    }
+
+    /* ---- Action buttons inside table ---- */
+    .row-actions {
+      display: inline-flex;
+      gap: 4px;
+    }
+    .row-action {
+      padding: 4px var(--space-2);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      font-size: var(--text-xs);
+      font-weight: var(--weight-medium);
+      transition: var(--transition-fast);
+    }
+    .row-action:hover {
+      color: var(--color-text);
+      border-color: var(--color-border-strong);
+    }
+    .row-action.is-edit:hover { color: var(--color-roll); border-color: var(--color-roll); }
+    .row-action.is-roll:hover { color: var(--color-roll); border-color: var(--color-roll); }
+    .row-action.is-close:hover { color: var(--color-credit); border-color: var(--color-credit); }
+    .row-action.is-assign:hover { color: var(--color-assignment); border-color: var(--color-assignment); }
+    .row-action.is-delete:hover { color: var(--color-debit); border-color: var(--color-debit); }
+
+    /* ---- Numeric color helpers ---- */
+    .pos { color: var(--color-credit); }
+    .neg { color: var(--color-debit); }
+    .muted { color: var(--color-text-muted); }
+    .faint { color: var(--color-text-faint); }
+
+    /* ---- Info cell truncation ---- */
+    .info-cell {
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--color-text-muted);
+    }
+
+    /* ---- Theme toggle (bottom-right) ---- */
+    .theme-toggle {
+      position: fixed;
+      right: var(--space-6);
+      bottom: var(--space-6);
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-full);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-md);
+    }
+  </style>
+</head>
+<body>
+  <!-- =========================== TOP BAR =========================== -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <span>Wheel Tracker</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-primary">+ Add Position</button>
+      <button class="icon-btn" title="Settings">⚙</button>
+      <button class="icon-btn" title="Logout">⎋</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- =========================== STAT STRIP =========================== -->
+    <div class="stat-strip">
+      <div class="stat-card">
+        <div class="stat-label">Total P&L</div>
+        <div class="stat-value is-positive">+$6,275</div>
+        <div class="stat-sub">All open + closed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Overall Return</div>
+        <div class="stat-value is-positive">+1.16%</div>
+        <div class="stat-sub">On closed groups</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Collateral</div>
+        <div class="stat-value">$71,000</div>
+        <div class="stat-sub">3 cash-secured legs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Open Positions</div>
+        <div class="stat-value">4</div>
+        <div class="stat-sub">3 puts · 1 covered call</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Closed Groups</div>
+        <div class="stat-value">3</div>
+        <div class="stat-sub">2 wins · 1 full wheel</div>
+      </div>
+    </div>
+
+    <!-- =========================== TABS =========================== -->
+    <nav class="tabs" role="tablist" aria-label="Primary">
+      <button class="tab" role="tab" aria-selected="false">Dashboard</button>
+      <button class="tab" role="tab" aria-selected="true">
+        Open Positions <span class="count">4</span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false">
+        Closed Groups <span class="count">3</span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false">
+        All Trades <span class="count">15</span>
+      </button>
+      <button class="tab" role="tab" aria-selected="false">
+        Stock Positions <span class="count">1</span>
+      </button>
+    </nav>
+
+    <!-- =========================== ALL OPEN POSITIONS TABLE =========================== -->
+    <div class="section-header">
+      <h2 class="section-title">All Open Positions</h2>
+      <div class="section-meta">4 active · sorted by Date Opened ↓</div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="trades">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th class="num">Contracts</th>
+            <th class="num">Strike</th>
+            <th class="num">Premium</th>
+            <th>Action</th>
+            <th>Type</th>
+            <th>Date Opened <span class="sort-arrow">↓</span></th>
+            <th>Exp Date</th>
+            <th class="num">Cash Required</th>
+            <th class="num">Return %</th>
+            <th class="num">% OTM</th>
+            <th class="num">P&amp;L</th>
+            <th>Info</th>
+            <th>Ref</th>
+            <th>Account</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 1. Plain open CSP on TSLA, ungrouped (no trade_ref) -->
+          <tr>
+            <td>
+              <span class="symbol-cell">
+                <a href="#" class="symbol-link">TSLA</a>
+              </span>
+            </td>
+            <td class="num">1</td>
+            <td class="num">$240.00</td>
+            <td class="num">$4.50</td>
+            <td><span class="badge action-sell">Sell</span></td>
+            <td><span class="badge type-put">Put</span></td>
+            <td>Apr 15, 2026</td>
+            <td>May 29, 2026</td>
+            <td class="num">$24,000</td>
+            <td class="num pos">+1.88%</td>
+            <td class="num pos">+7.50%</td>
+            <td class="num pos">+$450</td>
+            <td><div class="info-cell">Standard CSP entry — wheel restart after last cycle closed</div></td>
+            <td class="faint">—</td>
+            <td>Main</td>
+            <td>
+              <div class="row-actions">
+                <button class="row-action is-edit">Edit</button>
+                <button class="row-action is-roll">Roll</button>
+                <button class="row-action is-close">Close</button>
+                <button class="row-action is-assign">Assign</button>
+                <button class="row-action is-delete">Delete</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- 2. Rolled META put — Trade Ref: 101 -->
+          <tr>
+            <td>
+              <span class="symbol-cell">
+                <a href="#" class="symbol-link">META</a>
+                <span class="badge rolled">Rolled</span>
+              </span>
+            </td>
+            <td class="num">1</td>
+            <td class="num">$470.00</td>
+            <td class="num">$7.25</td>
+            <td><span class="badge action-sell">Sell</span></td>
+            <td><span class="badge type-put">Put</span></td>
+            <td>Mar 28, 2026</td>
+            <td>May 15, 2026</td>
+            <td class="num">$47,000</td>
+            <td class="num pos">+1.54%</td>
+            <td class="num pos">+5.32%</td>
+            <td class="num pos">+$725</td>
+            <td><div class="info-cell">Rolled: down 10 strikes for additional credit</div></td>
+            <td>101</td>
+            <td>IRA</td>
+            <td>
+              <div class="row-actions">
+                <button class="row-action is-edit">Edit</button>
+                <button class="row-action is-roll">Roll</button>
+                <button class="row-action is-close">Close</button>
+                <button class="row-action is-assign">Assign</button>
+                <button class="row-action is-delete">Delete</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- 3. STOCK ROW (assigned TSLA, 100 shares) — orange left border -->
+          <tr class="stock-row">
+            <td>
+              <span class="symbol-cell">
+                <a href="#" class="symbol-link">TSLA</a>
+                <span class="stock-tag">Stock · 100 sh</span>
+              </span>
+            </td>
+            <td class="num">—</td>
+            <td class="num">$250.00</td>
+            <td class="num">—</td>
+            <td><span class="badge status-assigned">Assigned</span></td>
+            <td><span class="badge" style="background: var(--color-assignment-bg); color: var(--color-assignment); border-color: var(--color-assignment);">Stock</span></td>
+            <td>Mar 13, 2026</td>
+            <td class="faint">—</td>
+            <td class="num">$25,000</td>
+            <td class="num faint">—</td>
+            <td class="num faint">—</td>
+            <td class="num pos">
+              +$1,400
+              <div class="faint" style="font-size: var(--text-xs); font-weight: var(--weight-regular); margin-top: 2px;">Running P&amp;L</div>
+            </td>
+            <td><div class="info-cell">Cost basis $250 · 2 covered calls written</div></td>
+            <td>102</td>
+            <td>Main</td>
+            <td>
+              <div class="row-actions">
+                <button class="row-action is-edit">Sell Call</button>
+                <button class="row-action is-assign">Called Away</button>
+                <button class="row-action is-delete">Delete</button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- 4. Open covered call against TSLA stock above -->
+          <tr>
+            <td>
+              <span class="symbol-cell">
+                <a href="#" class="symbol-link">TSLA</a>
+              </span>
+            </td>
+            <td class="num">1</td>
+            <td class="num">$275.00</td>
+            <td class="num">$4.25</td>
+            <td><span class="badge action-sell">Sell</span></td>
+            <td><span class="badge type-call">Call</span></td>
+            <td>Apr 21, 2026</td>
+            <td>May 22, 2026</td>
+            <td class="num">$27,500</td>
+            <td class="num pos">+1.55%</td>
+            <td class="num pos">+4.17%</td>
+            <td class="num pos">+$425</td>
+            <td><div class="info-cell">CC #2 — open, hoping for called away above $275</div></td>
+            <td>102</td>
+            <td>Main</td>
+            <td>
+              <div class="row-actions">
+                <button class="row-action is-edit">Edit</button>
+                <button class="row-action is-roll">Roll</button>
+                <button class="row-action is-close">Close</button>
+                <button class="row-action is-delete">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <button class="theme-toggle" title="Toggle theme">☾</button>
+</body>
+</html>

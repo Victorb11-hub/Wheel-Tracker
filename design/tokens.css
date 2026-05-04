@@ -1,0 +1,221 @@
+/* ==========================================================================
+   Wheel Tracker — design tokens
+   --------------------------------------------------------------------------
+   Two layers:
+     1. Primitive palette (raw colors) — under :root.
+     2. Semantic tokens (what the UI consumes) — under [data-theme="dark"]
+        and [data-theme="light"]. Components NEVER reference primitives
+        directly. They use --color-credit, --color-debit, etc.
+   ==========================================================================
+   Why semantic-first naming:
+     - --color-credit reads in the codebase as "this is the income side of
+       a trade" — independent of whether dark mode shifts the hue.
+     - When v3 redesign happens, only the semantic→primitive mapping changes.
+     - Domain mapping is locked in: green=credit, red=debit, blue=roll,
+       orange=assignment/stock. 4+ years of muscle memory at this palette.
+   ========================================================================== */
+
+:root {
+  /* ----- Primitive palette ---------------------------------------------- */
+
+  /* v1 accents — domain-anchored */
+  --green-500: #00ff88;       /* credit / open / profit */
+  --green-600: #00cc6a;       /* gradient end */
+  --green-100: rgba(0, 255, 136, 0.10);
+  --green-200: rgba(0, 255, 136, 0.20);
+
+  --red-500: #ff4444;         /* debit / loss / sold-puts pill */
+  --red-100: rgba(255, 68, 68, 0.10);
+  --red-200: rgba(255, 68, 68, 0.20);
+
+  --blue-500: #4488ff;        /* roll / edit */
+  --blue-100: rgba(68, 136, 255, 0.10);
+  --blue-200: rgba(68, 136, 255, 0.20);
+
+  --orange-500: #ff8844;      /* assignment / stock-row left border */
+  --orange-100: rgba(255, 136, 68, 0.10);
+  --orange-200: rgba(255, 136, 68, 0.20);
+
+  /* Dark grayscale */
+  --black: #000000;
+  --gray-950: #0a0a0a;
+  --gray-900: #111111;
+  --gray-800: #1a1a1a;
+  --gray-700: #222222;
+  --gray-600: #333333;
+  --gray-500: #555555;
+  --gray-400: #666666;
+  --gray-300: #888888;
+  --gray-200: #aaaaaa;
+  --gray-100: #cccccc;
+  --white: #ffffff;
+
+  /* Light grayscale */
+  --light-bg: #f5f5f5;
+  --light-card: #ffffff;
+  --light-border: #e5e5e5;
+  --light-border-strong: #d4d4d4;
+  --light-text: #111111;
+  --light-text-muted: #666666;
+  --light-text-faint: #999999;
+
+  /* ----- Typography scale ----------------------------------------------- */
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+
+  --text-xs: 11px;            /* badges, captions */
+  --text-sm: 12px;            /* table cells, helper text */
+  --text-base: 14px;          /* body, form inputs */
+  --text-md: 16px;            /* emphasized body, button labels */
+  --text-lg: 18px;            /* section headers */
+  --text-xl: 22px;            /* card titles */
+  --text-2xl: 28px;           /* stat values */
+  --text-3xl: 36px;           /* page heroes (Win Rate %) */
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ----- Spacing scale (4px base) --------------------------------------- */
+
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ----- Radii ---------------------------------------------------------- */
+
+  --radius-sm: 4px;           /* badges, pills */
+  --radius-md: 6px;           /* buttons, inputs */
+  --radius-lg: 8px;           /* cards, modals */
+  --radius-xl: 12px;          /* hero cards (stat strip) */
+  --radius-full: 9999px;      /* tab pills */
+
+  /* ----- Container / motion --------------------------------------------- */
+
+  --container-max: 1800px;
+  --transition-fast: 120ms ease;
+  --transition-base: 180ms ease;
+  --transition-slow: 240ms ease;
+}
+
+/* ============================================================================
+   DARK THEME (default)
+   ============================================================================ */
+[data-theme='dark'],
+:root {
+  /* Surfaces */
+  --color-bg: var(--black);
+  --color-surface: var(--gray-950);
+  --color-surface-raised: var(--gray-900);
+  --color-surface-hover: var(--gray-800);
+  --color-border: var(--gray-700);
+  --color-border-strong: var(--gray-600);
+
+  /* Text */
+  --color-text: var(--white);
+  --color-text-muted: var(--gray-300);
+  --color-text-faint: var(--gray-400);
+  --color-text-on-accent: var(--black);
+
+  /* Domain-semantic accents */
+  --color-credit: var(--green-500);             /* premium received, profit */
+  --color-credit-bg: var(--green-100);
+  --color-credit-bg-strong: var(--green-200);
+  --color-credit-gradient: linear-gradient(90deg, var(--green-500), var(--green-600));
+
+  --color-debit: var(--red-500);                /* premium paid, loss */
+  --color-debit-bg: var(--red-100);
+  --color-debit-bg-strong: var(--red-200);
+
+  --color-roll: var(--blue-500);                /* roll badges, edit action */
+  --color-roll-bg: var(--blue-100);
+  --color-roll-bg-strong: var(--blue-200);
+
+  --color-assignment: var(--orange-500);        /* stock rows, assigned badge */
+  --color-assignment-bg: var(--orange-100);
+  --color-assignment-bg-strong: var(--orange-200);
+
+  /* Action mapping (specific roles → semantic accents) */
+  --color-action-sell: var(--color-credit);
+  --color-action-buy: var(--color-debit);
+  --color-type-put: var(--color-debit);         /* puts default to red border */
+  --color-type-call: var(--color-credit);
+
+  /* Status mapping */
+  --color-status-open: var(--color-credit);
+  --color-status-closed: var(--gray-300);
+  --color-status-assigned: var(--color-assignment);
+
+  /* Focus + selection */
+  --color-focus-ring: var(--color-credit);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================================================
+   LIGHT THEME
+   ============================================================================ */
+[data-theme='light'] {
+  --color-bg: var(--light-bg);
+  --color-surface: var(--light-card);
+  --color-surface-raised: var(--white);
+  --color-surface-hover: #fafafa;
+  --color-border: var(--light-border);
+  --color-border-strong: var(--light-border-strong);
+
+  --color-text: var(--light-text);
+  --color-text-muted: var(--light-text-muted);
+  --color-text-faint: var(--light-text-faint);
+  --color-text-on-accent: var(--white);
+
+  /* Light-mode green has to be darker — pure #00ff88 is illegible on white */
+  --color-credit: #00b85f;
+  --color-credit-bg: rgba(0, 184, 95, 0.10);
+  --color-credit-bg-strong: rgba(0, 184, 95, 0.18);
+  --color-credit-gradient: linear-gradient(90deg, #00b85f, #008f49);
+
+  --color-debit: #d92626;
+  --color-debit-bg: rgba(217, 38, 38, 0.10);
+  --color-debit-bg-strong: rgba(217, 38, 38, 0.18);
+
+  --color-roll: #2a6df0;
+  --color-roll-bg: rgba(42, 109, 240, 0.10);
+  --color-roll-bg-strong: rgba(42, 109, 240, 0.18);
+
+  --color-assignment: #e76f1f;
+  --color-assignment-bg: rgba(231, 111, 31, 0.10);
+  --color-assignment-bg-strong: rgba(231, 111, 31, 0.18);
+
+  --color-action-sell: var(--color-credit);
+  --color-action-buy: var(--color-debit);
+  --color-type-put: var(--color-debit);
+  --color-type-call: var(--color-credit);
+
+  --color-status-open: var(--color-credit);
+  --color-status-closed: var(--light-text-muted);
+  --color-status-assigned: var(--color-assignment);
+
+  --color-focus-ring: var(--color-credit);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+}

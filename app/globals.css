@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens: primitive + semantic. Imported here so Tailwind utilities
+   like `bg-credit` resolve to var(--color-credit). */
+@import '../design/tokens.css';
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+}
+
+/* Tabular numerics in tables for clean alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
