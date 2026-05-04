@@ -117,13 +117,7 @@ export function WeeklyPremiumSection({ trades }: { trades: Trade[] }) {
               />
               <Tooltip
                 cursor={{ fill: 'var(--color-surface-hover)' }}
-                contentStyle={{
-                  background: 'var(--color-surface-raised)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 8,
-                  color: 'var(--color-text)',
-                }}
-                formatter={(v: number) => [fmtSignedUSD(v), 'Net premium']}
+                content={<ChartTooltip />}
               />
               <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                 {chartData.map((d, i) => (
@@ -201,6 +195,41 @@ export function WeeklyPremiumSection({ trades }: { trades: Trade[] }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Custom tooltip — Recharts default renders item color from the bar's `fill`,
+// which collides with the Cell credit/debit fills (green/red) on a dark
+// surface. Owning the markup lets us use semantic tokens (works in both
+// themes) and apply credit/debit tint to the value, not all of it.
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const value = Number(payload[0].value);
+  const sign = value > 0 ? '+' : value < 0 ? '' : '';
+  const display =
+    value === 0 ? '—' : `${sign}${fmtUSD(value, { cents: false })}`;
+  return (
+    <div className="rounded-md border border-border bg-surface-raised px-3 py-2 text-sm shadow-md">
+      <div className="text-xs text-text-faint">{label}</div>
+      <div
+        className={cn(
+          'font-semibold tabular-nums',
+          value > 0 && 'text-credit',
+          value < 0 && 'text-debit',
+          value === 0 && 'text-text-muted'
+        )}
+      >
+        {display}
+      </div>
     </div>
   );
 }
