@@ -1,8 +1,19 @@
+'use client';
+
 import { AllOpenTable } from '@/components/trades/all-open-table';
-import { buildSeed } from '@/lib/data/seed';
+import { useFullState } from '@/lib/queries/use-state';
 
 export default function OpenPositionsPage() {
-  const state = buildSeed();
+  const { data: state, isLoading } = useFullState();
+
+  if (isLoading || !state) {
+    return (
+      <div className="mt-6 rounded-lg border border-border bg-surface p-12 text-center text-sm text-text-muted">
+        Loading…
+      </div>
+    );
+  }
+
   const openTrades = state.trades.filter((t) => t.status === 'open');
   const closedTrades = state.trades.filter((t) => t.status !== 'open');
 

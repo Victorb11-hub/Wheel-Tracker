@@ -1,8 +1,18 @@
+'use client';
+
 import { AllTradesTable } from '@/components/trades/all-trades-table';
-import { buildSeed } from '@/lib/data/seed';
+import { useFullState } from '@/lib/queries/use-state';
 
 export default function AllTradesPage() {
-  const state = buildSeed();
+  const { data: state, isLoading } = useFullState();
+
+  if (isLoading || !state) {
+    return (
+      <div className="mt-6 rounded-lg border border-border bg-surface p-12 text-center text-sm text-text-muted">
+        Loading…
+      </div>
+    );
+  }
 
   return (
     <>
