@@ -40,7 +40,11 @@ export function SellCoveredCallModal({
     if (!stock) return;
     setStrike('');
     setPremium('');
-    setExpDate('');
+    // Default expiration to ~30 DTE — typical CC sale window. Modal default
+    // pattern for date fields: today for "happens-now" events (date opened,
+    // assignment date, called-away date), today+N for "future" events
+    // (expirations).
+    setExpDate(addDaysISO(30));
     setDateOpened(todayISO());
     setNotes('');
     sellCall.reset();
@@ -284,7 +288,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function todayISO(): string {
+  return addDaysISO(0);
+}
+
+function addDaysISO(days: number): string {
   const d = new Date();
+  d.setDate(d.getDate() + days);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
