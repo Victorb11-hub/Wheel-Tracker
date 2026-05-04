@@ -12,6 +12,7 @@ import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
 import { CloseTradeModal } from './close-trade-modal';
 import { DeleteTradeModal } from './delete-trade-modal';
 import { EditTradeModal } from './edit-trade-modal';
+import { SellCoveredCallModal } from '@/components/stocks/sell-covered-call-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,7 @@ export function AllOpenTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
+  const [sellCallStockId, setSellCallStockId] = useState<string | null>(null);
   const editingTrade = editingId
     ? trades.find((t) => t.id === editingId) ?? null
     : null;
@@ -57,6 +59,9 @@ export function AllOpenTable({
     : null;
   const closingTrade = closingId
     ? trades.find((t) => t.id === closingId) ?? null
+    : null;
+  const sellCallStock = sellCallStockId
+    ? stocks.find((s) => s.id === sellCallStockId) ?? null
     : null;
 
   // Merge: open trades + held stock positions, ordered by date_opened desc.
@@ -103,7 +108,11 @@ export function AllOpenTable({
               />
             ))}
             {stocks.map((s) => (
-              <StockRow key={s.id} s={s} />
+              <StockRow
+                key={s.id}
+                s={s}
+                onSellCall={() => setSellCallStockId(s.id)}
+              />
             ))}
           </tbody>
         </table>
@@ -133,6 +142,15 @@ export function AllOpenTable({
         open={closingTrade !== null}
         onOpenChange={(next) => {
           if (!next) setClosingId(null);
+        }}
+      />
+
+      <SellCoveredCallModal
+        stock={sellCallStock}
+        trades={trades}
+        open={sellCallStock !== null}
+        onOpenChange={(next) => {
+          if (!next) setSellCallStockId(null);
         }}
       />
     </>
@@ -216,7 +234,13 @@ function TradeRow({
   );
 }
 
-function StockRow({ s }: { s: StockPosition }) {
+function StockRow({
+  s,
+  onSellCall,
+}: {
+  s: StockPosition;
+  onSellCall: () => void;
+}) {
   // Running P&L: realized covered-call premium + unrealized stock gain at cost.
   // We don't track live prices, so display only collected premiums + (sale 0 - cost) avoided.
   // Conservative: callPremiums minus 0 unrealized (since we don't know current price).
@@ -263,7 +287,9 @@ function StockRow({ s }: { s: StockPosition }) {
       <td className={TD}>{s.account ?? '—'}</td>
       <td className={TD}>
         <div className="inline-flex gap-1">
-          <button className={cn(ROW_ACTION, ACTION_HOVER.edit)}>Sell Call</button>
+          <button className={cn(ROW_ACTION, ACTION_HOVER.edit)} onClick={onSellCall}>
+            Sell Call
+          </button>
           <button className={cn(ROW_ACTION, ACTION_HOVER.assign)}>
             Called Away
           </button>

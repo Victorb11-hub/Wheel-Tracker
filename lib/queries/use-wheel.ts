@@ -4,9 +4,11 @@ import { useMutation } from '@tanstack/react-query';
 import { useDataClient } from './providers';
 import { useInvalidateState } from './use-state';
 import { planClose } from '../wheel/close';
+import { planSellCoveredCall } from '../wheel/covered-call';
 import type {
   CloseInput,
   PlannerCtx,
+  SellCoveredCallInput,
   WheelState,
 } from '../wheel/plan';
 
@@ -36,6 +38,25 @@ export function useCloseTrade() {
         groups: full.groups,
       };
       const plan = planClose(input, state, makePlannerCtx());
+      await dataClient.applyPlan(plan);
+    },
+    onSettled: () => invalidate(),
+  });
+}
+
+export function useSellCoveredCall() {
+  const dataClient = useDataClient();
+  const invalidate = useInvalidateState();
+
+  return useMutation({
+    mutationFn: async (input: SellCoveredCallInput) => {
+      const full = await dataClient.getState();
+      const state: WheelState = {
+        trades: full.trades,
+        stocks: full.stocks,
+        groups: full.groups,
+      };
+      const plan = planSellCoveredCall(input, state, makePlannerCtx());
       await dataClient.applyPlan(plan);
     },
     onSettled: () => invalidate(),

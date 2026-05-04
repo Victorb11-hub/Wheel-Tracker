@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { fmtDate, fmtSignedUSD, fmtUSD } from '@/components/trades/format';
 import { TypeBadge } from '@/components/trades/badges';
 import { cn } from '@/lib/utils';
@@ -53,9 +54,11 @@ function findCalledAwayProjection(
 export function StockPositionCard({
   stock,
   trades,
+  onSellCall,
 }: {
   stock: StockPosition;
   trades: Trade[];
+  onSellCall?: () => void;
 }) {
   const breakdown = computeRunningPL(stock);
   const projection = findCalledAwayProjection(stock, trades);
@@ -104,6 +107,18 @@ export function StockPositionCard({
       </div>
 
       <CoveredCallsTable stock={stock} trades={trades} />
+
+      <div className="flex justify-end gap-2 border-t border-border bg-surface-raised px-5 py-2">
+        <Button size="sm" variant="secondary" onClick={onSellCall}>
+          Sell Call
+        </Button>
+        <Button size="sm" variant="secondary" disabled>
+          Called Away
+        </Button>
+        <Button size="sm" variant="ghost" disabled>
+          Delete
+        </Button>
+      </div>
     </details>
   );
 }

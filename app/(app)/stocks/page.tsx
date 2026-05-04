@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
+import { SellCoveredCallModal } from '@/components/stocks/sell-covered-call-modal';
 import { StockPositionCard } from '@/components/stocks/stock-position-card';
 import { fmtSignedUSD } from '@/components/trades/format';
 import { useFullState } from '@/lib/queries/use-state';
 
 export default function StockPositionsPage() {
   const { data: state, isLoading } = useFullState();
+  const [sellCallStockId, setSellCallStockId] = useState<string | null>(null);
 
   if (isLoading || !state) {
     return (
@@ -63,10 +66,24 @@ export default function StockPositionsPage() {
               key={s.id}
               stock={s}
               trades={state.trades}
+              onSellCall={() => setSellCallStockId(s.id)}
             />
           ))}
         </div>
       )}
+
+      <SellCoveredCallModal
+        stock={
+          sellCallStockId
+            ? state.stocks.find((s) => s.id === sellCallStockId) ?? null
+            : null
+        }
+        trades={state.trades}
+        open={sellCallStockId !== null}
+        onOpenChange={(next) => {
+          if (!next) setSellCallStockId(null);
+        }}
+      />
     </div>
   );
 }
