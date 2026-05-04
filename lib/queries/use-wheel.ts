@@ -8,7 +8,9 @@ import { planCalledAway } from '../wheel/called-away';
 import { planClose } from '../wheel/close';
 import { planSellCoveredCall } from '../wheel/covered-call';
 import { planRoll } from '../wheel/roll';
+import { planAddTrade } from '../wheel/smart-close';
 import type {
+  AddPositionInput,
   AssignInput,
   CalledAwayInput,
   CloseInput,
@@ -105,6 +107,28 @@ export function useAssignTrade() {
       // given the random suffix, and the data layer's plan dispatcher checks
       // for id duplicates and rolls back if hit.
       const plan = planAssign(input, state, makePlannerCtx());
+      await dataClient.applyPlan(plan);
+    },
+    onSettled: () => invalidate(),
+  });
+}
+
+// planAddTrade auto-routes between planPlainAdd (new leg) and planSmartClose
+// (matched buy-to-close on an open sell). Caller doesn't need to pre-detect
+// the route — the planner handles it from the input shape.
+export function useAddPosition() {
+  const dataClient = useDataClient();
+  const invalidate = useInvalidateState();
+
+  return useMutation({
+    mutationFn: async (input: AddPositionInput) => {
+      const full = await dataClient.getState();
+      const state: WheelState = {
+        trades: full.trades,
+        stocks: full.stocks,
+        groups: full.groups,
+      };
+      const plan = planAddTrade(input, state, makePlannerCtx());
       await dataClient.applyPlan(plan);
     },
     onSettled: () => invalidate(),
