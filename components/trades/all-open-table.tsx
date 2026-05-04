@@ -14,6 +14,7 @@ import { CloseTradeModal } from './close-trade-modal';
 import { DeleteTradeModal } from './delete-trade-modal';
 import { EditTradeModal } from './edit-trade-modal';
 import { RollTradeModal } from './roll-trade-modal';
+import { CalledAwayModal } from '@/components/stocks/called-away-modal';
 import { SellCoveredCallModal } from '@/components/stocks/sell-covered-call-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
 import { cn } from '@/lib/utils';
@@ -55,6 +56,7 @@ export function AllOpenTable({
   const [rollingId, setRollingId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [sellCallStockId, setSellCallStockId] = useState<string | null>(null);
+  const [calledAwayStockId, setCalledAwayStockId] = useState<string | null>(null);
   const editingTrade = editingId
     ? trades.find((t) => t.id === editingId) ?? null
     : null;
@@ -72,6 +74,9 @@ export function AllOpenTable({
     : null;
   const sellCallStock = sellCallStockId
     ? stocks.find((s) => s.id === sellCallStockId) ?? null
+    : null;
+  const calledAwayStock = calledAwayStockId
+    ? stocks.find((s) => s.id === calledAwayStockId) ?? null
     : null;
 
   // Merge: open trades + held stock positions, ordered by date_opened desc.
@@ -124,6 +129,7 @@ export function AllOpenTable({
                 key={s.id}
                 s={s}
                 onSellCall={() => setSellCallStockId(s.id)}
+                onCalledAway={() => setCalledAwayStockId(s.id)}
               />
             ))}
           </tbody>
@@ -179,6 +185,15 @@ export function AllOpenTable({
         open={sellCallStock !== null}
         onOpenChange={(next) => {
           if (!next) setSellCallStockId(null);
+        }}
+      />
+
+      <CalledAwayModal
+        stock={calledAwayStock}
+        trades={trades}
+        open={calledAwayStock !== null}
+        onOpenChange={(next) => {
+          if (!next) setCalledAwayStockId(null);
         }}
       />
     </>
@@ -273,9 +288,11 @@ function TradeRow({
 function StockRow({
   s,
   onSellCall,
+  onCalledAway,
 }: {
   s: StockPosition;
   onSellCall: () => void;
+  onCalledAway: () => void;
 }) {
   // Running P&L: realized covered-call premium + unrealized stock gain at cost.
   // We don't track live prices, so display only collected premiums + (sale 0 - cost) avoided.
@@ -326,7 +343,7 @@ function StockRow({
           <button className={cn(ROW_ACTION, ACTION_HOVER.edit)} onClick={onSellCall}>
             Sell Call
           </button>
-          <button className={cn(ROW_ACTION, ACTION_HOVER.assign)}>
+          <button className={cn(ROW_ACTION, ACTION_HOVER.assign)} onClick={onCalledAway}>
             Called Away
           </button>
           <button className={cn(ROW_ACTION, ACTION_HOVER.delete)}>Delete</button>

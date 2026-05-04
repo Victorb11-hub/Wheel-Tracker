@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { CalledAwayModal } from '@/components/stocks/called-away-modal';
 import { SellCoveredCallModal } from '@/components/stocks/sell-covered-call-modal';
 import { StockPositionCard } from '@/components/stocks/stock-position-card';
 import { fmtSignedUSD } from '@/components/trades/format';
@@ -9,6 +10,7 @@ import { useFullState } from '@/lib/queries/use-state';
 export default function StockPositionsPage() {
   const { data: state, isLoading } = useFullState();
   const [sellCallStockId, setSellCallStockId] = useState<string | null>(null);
+  const [calledAwayStockId, setCalledAwayStockId] = useState<string | null>(null);
 
   if (isLoading || !state) {
     return (
@@ -67,6 +69,7 @@ export default function StockPositionsPage() {
               stock={s}
               trades={state.trades}
               onSellCall={() => setSellCallStockId(s.id)}
+              onCalledAway={() => setCalledAwayStockId(s.id)}
             />
           ))}
         </div>
@@ -82,6 +85,19 @@ export default function StockPositionsPage() {
         open={sellCallStockId !== null}
         onOpenChange={(next) => {
           if (!next) setSellCallStockId(null);
+        }}
+      />
+
+      <CalledAwayModal
+        stock={
+          calledAwayStockId
+            ? state.stocks.find((s) => s.id === calledAwayStockId) ?? null
+            : null
+        }
+        trades={state.trades}
+        open={calledAwayStockId !== null}
+        onOpenChange={(next) => {
+          if (!next) setCalledAwayStockId(null);
         }}
       />
     </div>

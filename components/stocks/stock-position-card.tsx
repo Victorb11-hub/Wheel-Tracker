@@ -55,10 +55,12 @@ export function StockPositionCard({
   stock,
   trades,
   onSellCall,
+  onCalledAway,
 }: {
   stock: StockPosition;
   trades: Trade[];
   onSellCall?: () => void;
+  onCalledAway?: () => void;
 }) {
   const breakdown = computeRunningPL(stock);
   const projection = findCalledAwayProjection(stock, trades);
@@ -112,7 +114,7 @@ export function StockPositionCard({
         <Button size="sm" variant="secondary" onClick={onSellCall}>
           Sell Call
         </Button>
-        <Button size="sm" variant="secondary" disabled>
+        <Button size="sm" variant="secondary" onClick={onCalledAway}>
           Called Away
         </Button>
         <Button size="sm" variant="ghost" disabled>

@@ -4,11 +4,13 @@ import { useMutation } from '@tanstack/react-query';
 import { useDataClient } from './providers';
 import { useInvalidateState } from './use-state';
 import { planAssign } from '../wheel/assign';
+import { planCalledAway } from '../wheel/called-away';
 import { planClose } from '../wheel/close';
 import { planSellCoveredCall } from '../wheel/covered-call';
 import { planRoll } from '../wheel/roll';
 import type {
   AssignInput,
+  CalledAwayInput,
   CloseInput,
   PlannerCtx,
   RollInput,
@@ -103,6 +105,25 @@ export function useAssignTrade() {
       // given the random suffix, and the data layer's plan dispatcher checks
       // for id duplicates and rolls back if hit.
       const plan = planAssign(input, state, makePlannerCtx());
+      await dataClient.applyPlan(plan);
+    },
+    onSettled: () => invalidate(),
+  });
+}
+
+export function useCalledAway() {
+  const dataClient = useDataClient();
+  const invalidate = useInvalidateState();
+
+  return useMutation({
+    mutationFn: async (input: CalledAwayInput) => {
+      const full = await dataClient.getState();
+      const state: WheelState = {
+        trades: full.trades,
+        stocks: full.stocks,
+        groups: full.groups,
+      };
+      const plan = planCalledAway(input, state, makePlannerCtx());
       await dataClient.applyPlan(plan);
     },
     onSettled: () => invalidate(),
