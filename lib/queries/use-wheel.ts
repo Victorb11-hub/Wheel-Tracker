@@ -3,10 +3,12 @@
 import { useMutation } from '@tanstack/react-query';
 import { useDataClient } from './providers';
 import { useInvalidateState } from './use-state';
+import { planAssign } from '../wheel/assign';
 import { planClose } from '../wheel/close';
 import { planSellCoveredCall } from '../wheel/covered-call';
 import { planRoll } from '../wheel/roll';
 import type {
+  AssignInput,
   CloseInput,
   PlannerCtx,
   RollInput,
@@ -78,6 +80,29 @@ export function useRollTrade() {
         groups: full.groups,
       };
       const plan = planRoll(input, state, makePlannerCtx());
+      await dataClient.applyPlan(plan);
+    },
+    onSettled: () => invalidate(),
+  });
+}
+
+export function useAssignTrade() {
+  const dataClient = useDataClient();
+  const invalidate = useInvalidateState();
+
+  return useMutation({
+    mutationFn: async (input: AssignInput) => {
+      const full = await dataClient.getState();
+      const state: WheelState = {
+        trades: full.trades,
+        stocks: full.stocks,
+        groups: full.groups,
+      };
+      // planAssign generates two ids (stock + assignment-row). makePlannerCtx
+      // uses 't-' prefix for both — collisions are essentially impossible
+      // given the random suffix, and the data layer's plan dispatcher checks
+      // for id duplicates and rolls back if hit.
+      const plan = planAssign(input, state, makePlannerCtx());
       await dataClient.applyPlan(plan);
     },
     onSettled: () => invalidate(),

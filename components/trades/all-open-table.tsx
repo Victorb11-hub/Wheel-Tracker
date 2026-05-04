@@ -9,6 +9,7 @@ import {
 } from '@/lib/calculations';
 import type { CustomAccount, StockPosition, Trade, TradeGroup } from '@/types/trade';
 import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
+import { AssignTradeModal } from './assign-trade-modal';
 import { CloseTradeModal } from './close-trade-modal';
 import { DeleteTradeModal } from './delete-trade-modal';
 import { EditTradeModal } from './edit-trade-modal';
@@ -52,6 +53,7 @@ export function AllOpenTable({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [rollingId, setRollingId] = useState<string | null>(null);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
   const [sellCallStockId, setSellCallStockId] = useState<string | null>(null);
   const editingTrade = editingId
     ? trades.find((t) => t.id === editingId) ?? null
@@ -64,6 +66,9 @@ export function AllOpenTable({
     : null;
   const rollingTrade = rollingId
     ? trades.find((t) => t.id === rollingId) ?? null
+    : null;
+  const assigningTrade = assigningId
+    ? trades.find((t) => t.id === assigningId) ?? null
     : null;
   const sellCallStock = sellCallStockId
     ? stocks.find((s) => s.id === sellCallStockId) ?? null
@@ -111,6 +116,7 @@ export function AllOpenTable({
                 onDelete={() => setDeletingId(t.id)}
                 onClose={() => setClosingId(t.id)}
                 onRoll={() => setRollingId(t.id)}
+                onAssign={() => setAssigningId(t.id)}
               />
             ))}
             {stocks.map((s) => (
@@ -159,6 +165,14 @@ export function AllOpenTable({
         }}
       />
 
+      <AssignTradeModal
+        trade={assigningTrade}
+        open={assigningTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setAssigningId(null);
+        }}
+      />
+
       <SellCoveredCallModal
         stock={sellCallStock}
         trades={trades}
@@ -178,6 +192,7 @@ function TradeRow({
   onDelete,
   onClose,
   onRoll,
+  onAssign,
 }: {
   t: Trade;
   closedTrades: Trade[];
@@ -185,6 +200,7 @@ function TradeRow({
   onDelete: () => void;
   onClose: () => void;
   onRoll: () => void;
+  onAssign: () => void;
 }) {
   if (t.action !== 'sell' && t.action !== 'buy') return null;
   // After this guard t is RegularLeg
@@ -241,7 +257,9 @@ function TradeRow({
             Close
           </button>
           {t.action === 'sell' && t.type === 'put' && (
-            <button className={cn(ROW_ACTION, ACTION_HOVER.assign)}>Assign</button>
+            <button className={cn(ROW_ACTION, ACTION_HOVER.assign)} onClick={onAssign}>
+              Assign
+            </button>
           )}
           <button className={cn(ROW_ACTION, ACTION_HOVER.delete)} onClick={onDelete}>
             Delete
