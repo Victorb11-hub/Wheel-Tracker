@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddPositionModal } from '@/components/trades/add-position-modal';
 import { downloadBlob } from '@/lib/export/download';
+import { exportTradesToCsv } from '@/lib/export/to-csv';
 import { exportToExcel } from '@/lib/export/to-excel';
 import { exportToJson } from '@/lib/export/to-json';
 import { useFullState } from '@/lib/queries/use-state';
@@ -38,6 +39,18 @@ export function TopBar() {
       filename,
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
+  }
+
+  function handleExportCsvFull() {
+    if (!state) return;
+    const { content, filename } = exportTradesToCsv(state, { includeInternal: true });
+    downloadBlob(content, filename, 'text/csv');
+  }
+
+  function handleExportCsvBroker() {
+    if (!state) return;
+    const { content, filename } = exportTradesToCsv(state, { includeInternal: false });
+    downloadBlob(content, filename, 'text/csv');
   }
 
   return (
@@ -70,8 +83,11 @@ export function TopBar() {
             <DropdownMenuItem onSelect={handleExportExcel} disabled={!state}>
               Export → Excel
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              Export → CSV (coming soon)
+            <DropdownMenuItem onSelect={handleExportCsvFull} disabled={!state}>
+              Export → Trades (CSV)
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleExportCsvBroker} disabled={!state}>
+              Export → Trades (CSV, broker-style)
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Import</DropdownMenuLabel>
