@@ -1,11 +1,15 @@
+'use client';
+
+import { useState } from 'react';
 import {
   calculateCashRequired,
   calculateOTM,
   calculatePL,
   calculateReturnPercent,
 } from '@/lib/calculations';
-import type { StockPosition, Trade } from '@/types/trade';
+import type { CustomAccount, StockPosition, Trade } from '@/types/trade';
 import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
+import { EditTradeModal } from './edit-trade-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
 import { cn } from '@/lib/utils';
 
@@ -29,9 +33,15 @@ interface Props {
   trades: Trade[];
   stocks: StockPosition[];
   closedTrades: Trade[];
+  accounts: CustomAccount[];
 }
 
-export function AllOpenTable({ trades, stocks, closedTrades }: Props) {
+export function AllOpenTable({ trades, stocks, closedTrades, accounts }: Props) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingTrade = editingId
+    ? trades.find((t) => t.id === editingId) ?? null
+    : null;
+
   // Merge: open trades + held stock positions, ordered by date_opened desc.
   const openTrades = trades
     .filter((t) => t.status === 'open')
@@ -41,47 +51,65 @@ export function AllOpenTable({ trades, stocks, closedTrades }: Props) {
     );
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr>
-            <th className={cn(TH, 'text-left')}>Symbol</th>
-            <th className={cn(TH, 'text-right')}>Contracts</th>
-            <th className={cn(TH, 'text-right')}>Strike</th>
-            <th className={cn(TH, 'text-right')}>Premium</th>
-            <th className={cn(TH, 'text-left')}>Action</th>
-            <th className={cn(TH, 'text-left')}>Type</th>
-            <th className={cn(TH, 'text-left')}>Date Opened ↓</th>
-            <th className={cn(TH, 'text-left')}>Exp Date</th>
-            <th className={cn(TH, 'text-right')}>Cash Required</th>
-            <th className={cn(TH, 'text-right')}>Return %</th>
-            <th className={cn(TH, 'text-right')}>% OTM</th>
-            <th className={cn(TH, 'text-right')}>P&amp;L</th>
-            <th className={cn(TH, 'text-left')}>Info</th>
-            <th className={cn(TH, 'text-left')}>Ref</th>
-            <th className={cn(TH, 'text-left')}>Account</th>
-            <th className={cn(TH, 'text-left')}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {openTrades.map((t) => (
-            <TradeRow key={t.id} t={t} closedTrades={closedTrades} />
-          ))}
-          {stocks.map((s) => (
-            <StockRow key={s.id} s={s} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th className={cn(TH, 'text-left')}>Symbol</th>
+              <th className={cn(TH, 'text-right')}>Contracts</th>
+              <th className={cn(TH, 'text-right')}>Strike</th>
+              <th className={cn(TH, 'text-right')}>Premium</th>
+              <th className={cn(TH, 'text-left')}>Action</th>
+              <th className={cn(TH, 'text-left')}>Type</th>
+              <th className={cn(TH, 'text-left')}>Date Opened ↓</th>
+              <th className={cn(TH, 'text-left')}>Exp Date</th>
+              <th className={cn(TH, 'text-right')}>Cash Required</th>
+              <th className={cn(TH, 'text-right')}>Return %</th>
+              <th className={cn(TH, 'text-right')}>% OTM</th>
+              <th className={cn(TH, 'text-right')}>P&amp;L</th>
+              <th className={cn(TH, 'text-left')}>Info</th>
+              <th className={cn(TH, 'text-left')}>Ref</th>
+              <th className={cn(TH, 'text-left')}>Account</th>
+              <th className={cn(TH, 'text-left')}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {openTrades.map((t) => (
+              <TradeRow
+                key={t.id}
+                t={t}
+                closedTrades={closedTrades}
+                onEdit={() => setEditingId(t.id)}
+              />
+            ))}
+            {stocks.map((s) => (
+              <StockRow key={s.id} s={s} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <EditTradeModal
+        trade={editingTrade}
+        accounts={accounts}
+        open={editingTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setEditingId(null);
+        }}
+      />
+    </>
   );
 }
 
 function TradeRow({
   t,
   closedTrades,
+  onEdit,
 }: {
   t: Trade;
   closedTrades: Trade[];
+  onEdit: () => void;
 }) {
   if (t.action !== 'sell' && t.action !== 'buy') return null;
   // After this guard t is RegularLeg
@@ -128,7 +156,9 @@ function TradeRow({
       <td className={TD}>{t.account ?? '—'}</td>
       <td className={TD}>
         <div className="inline-flex gap-1">
-          <button className={cn(ROW_ACTION, ACTION_HOVER.edit)}>Edit</button>
+          <button className={cn(ROW_ACTION, ACTION_HOVER.edit)} onClick={onEdit}>
+            Edit
+          </button>
           <button className={cn(ROW_ACTION, ACTION_HOVER.roll)}>Roll</button>
           <button className={cn(ROW_ACTION, ACTION_HOVER.close)}>Close</button>
           {t.action === 'sell' && t.type === 'put' && (

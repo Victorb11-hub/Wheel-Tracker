@@ -8,9 +8,10 @@ import {
   calculatePL,
   calculateReturnPercent,
 } from '@/lib/calculations';
-import type { Trade } from '@/types/trade';
+import type { CustomAccount, Trade } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
+import { EditTradeModal } from './edit-trade-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
 import { cn } from '@/lib/utils';
 
@@ -76,12 +77,22 @@ function emptyMessage(status: StatusFilter, symbol: string): string {
   }
 }
 
-export function AllTradesTable({ trades }: { trades: Trade[] }) {
+export function AllTradesTable({
+  trades,
+  accounts,
+}: {
+  trades: Trade[];
+  accounts: CustomAccount[];
+}) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [symbolFilter, setSymbolFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date_opened');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingTrade = editingId
+    ? trades.find((t) => t.id === editingId) ?? null
+    : null;
 
   // Symbols dropdown is auto-populated from the data, sorted A→Z.
   // refreshKey forces re-derivation on click — useful once Trade data is live.
@@ -208,12 +219,26 @@ export function AllTradesTable({ trades }: { trades: Trade[] }) {
               </tr>
             ) : (
               filteredSorted.map((t) => (
-                <Row key={t.id} t={t} allTrades={trades} />
+                <Row
+                  key={t.id}
+                  t={t}
+                  allTrades={trades}
+                  onEdit={() => setEditingId(t.id)}
+                />
               ))
             )}
           </tbody>
         </table>
       </div>
+
+      <EditTradeModal
+        trade={editingTrade}
+        accounts={accounts}
+        open={editingTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setEditingId(null);
+        }}
+      />
     </div>
   );
 }
@@ -280,7 +305,15 @@ function sortValue(
   }
 }
 
-function Row({ t, allTrades }: { t: Trade; allTrades: Trade[] }) {
+function Row({
+  t,
+  allTrades,
+  onEdit,
+}: {
+  t: Trade;
+  allTrades: Trade[];
+  onEdit: () => void;
+}) {
   const cash = calculateCashRequired(t);
   const ret = calculateReturnPercent(t);
   const otm = calculateOTM(t);
@@ -349,7 +382,9 @@ function Row({ t, allTrades }: { t: Trade; allTrades: Trade[] }) {
       <td className={TD}>{t.account ?? '—'}</td>
       <td className={TD}>
         <div className="inline-flex gap-1">
-          <button className={cn(ROW_ACTION, ACTION_HOVER.edit)}>Edit</button>
+          <button className={cn(ROW_ACTION, ACTION_HOVER.edit)} onClick={onEdit}>
+            Edit
+          </button>
           {t.status === 'open' && !isSynthetic && (
             <>
               <button className={cn(ROW_ACTION, ACTION_HOVER.roll)}>Roll</button>

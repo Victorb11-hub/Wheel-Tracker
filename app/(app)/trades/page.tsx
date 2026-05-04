@@ -24,7 +24,7 @@ export default function AllTradesPage() {
         </p>
       </div>
 
-      <AllTradesTable trades={state.trades} />
+      <AllTradesTable trades={state.trades} accounts={state.accounts} />
     </>
   );
 }
