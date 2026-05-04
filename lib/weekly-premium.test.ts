@@ -170,6 +170,201 @@ describe('bucketWeeklyPremium — open trades', () => {
   });
 });
 
+describe('bucketWeeklyPremium — roll buyback attribution', () => {
+  // The roll buyback dollar amount must attribute to the NEW leg only,
+  // never to the leg it closed. This guards against the historical
+  // double-count where the buyback was subtracted from both the original
+  // (via close_price) and the new leg (via calculateRollCredit).
+
+  test('full roll cycle, new leg held to exp: original full premium + new leg roll-credit', () => {
+    // Trade 1: sell 3/30 $7.25/sh, exp 4/17, rolled 4/13 (close_price $0.25/sh)
+    const original = sellPut({
+      id: 'orig',
+      symbol: 'TSLA',
+      trade_ref: '99',
+      premium: 7.25,
+      contracts: 1,
+      strike: 100,
+      date_opened: '2026-03-30',
+      date_closed: '2026-04-13',
+      exp_date: '2026-04-17',
+      status: 'closed',
+      is_rolled: true,
+      close_price: 0.25,
+    });
+    // Trade 2: roll buyback on 4/13 (excluded entirely)
+    const buyback = buyClose({
+      id: 'roll-bb',
+      symbol: 'TSLA',
+      trade_ref: '99',
+      premium: 0.25,
+      contracts: 1,
+      date_opened: '2026-04-13',
+      date_closed: '2026-04-13',
+      is_rolled: true,
+    });
+    // Trade 3: new leg opened 4/13, exp 5/22, $7 premium, held to exp
+    const newLeg = sellPut({
+      id: 'new',
+      symbol: 'TSLA',
+      trade_ref: '99',
+      premium: 7,
+      contracts: 1,
+      strike: 95,
+      date_opened: '2026-04-13',
+      exp_date: '2026-05-22',
+      status: 'open',
+      is_rolled: true,
+    });
+
+    const out = bucketWeeklyPremium(
+      [original, buyback, newLeg],
+      { kind: 'all-time' },
+      NOW
+    );
+
+    // Original → week of 4/13 (its date_closed week), full premium $725
+    const origWeek = out.find((b) => ymd(b.weekStart) === '2026-04-13')!;
+    expect(origWeek.total).toBe(725);
+    // New leg → week of 5/18 (exp 5/22 falls in 5/18 week), roll credit
+    // = 700 - 25 = 675
+    const newWeek = out.find((b) => ymd(b.weekStart) === '2026-05-18')!;
+    expect(newWeek.total).toBe(675);
+    // No third bucket from the buyback row
+    expect(out).toHaveLength(2);
+  });
+
+  test('full roll cycle, new leg early-closed: original full premium + new leg minus both buybacks', () => {
+    // Trade 1: sell 3/30 $7.25/sh, rolled 4/13 (close_price $0.25/sh)
+    const original = sellPut({
+      id: 'orig',
+      symbol: 'TSLA',
+      trade_ref: '99',
+      premium: 7.25,
+      contracts: 1,
+      strike: 100,
+      date_opened: '2026-03-30',
+      date_closed: '2026-04-13',
+      exp_date: '2026-04-17',
+      status: 'closed',
+      is_rolled: true,
+      close_price: 0.25,
+    });
+    // Trade 2: roll buyback on 4/13 (excluded)
+    const rollBuyback = buyClose({
+      id: 'roll-bb',
+      symbol: 'TSLA',
+      trade_ref: '99',
+      premium: 0.25,
+      contracts: 1,
+      date_opened: '2026-04-13',
+      date_closed: '2026-04-13',
+      is_rolled: true,
+    });
+    // Trade 3: new leg opened 4/13, $7.25 premium, early-closed 5/4 for $0.50/sh
+    const newLeg = sellPut({
+      id: 'new',
+      symbol: 'TSLA',
+      trade_ref: '99',
+      premium: 7.25,
+      contracts: 1,
+      strike: 95,
+      date_opened: '2026-04-13',
+      date_closed: '2026-05-04',
+      exp_date: '2026-05-22',
+      status: 'closed',
+      is_rolled: true,
+      close_price: 0.50,
+    });
+    // Trade 4: standalone early-close buyback on 5/4 (excluded)
+    const earlyCloseBuyback = buyClose({
+      id: 'early-bb',
+      symbol: 'TSLA',
+      trade_ref: '99',
+      premium: 0.50,
+      contracts: 1,
+      date_opened: '2026-05-04',
+      date_closed: '2026-05-04',
+      is_rolled: false,
+    });
+
+    const out = bucketWeeklyPremium(
+      [original, rollBuyback, newLeg, earlyCloseBuyback],
+      { kind: 'all-time' },
+      NOW
+    );
+
+    // Original → week of 4/13, full premium $725
+    const origWeek = out.find((b) => ymd(b.weekStart) === '2026-04-13')!;
+    expect(origWeek.total).toBe(725);
+    // New leg → week of 5/4, premium minus predecessor's roll buyback
+    // ($25) minus its own early-close buyback ($50) = 725 - 25 - 50 = 650
+    const newWeek = out.find((b) => ymd(b.weekStart) === '2026-05-04')!;
+    expect(newWeek.total).toBe(650);
+    expect(out).toHaveLength(2);
+    // Sanity: total across the whole cycle = $1,375 (worked example)
+    expect(out.reduce((s, b) => s + b.total, 0)).toBe(1375);
+  });
+
+  test('standalone early close (no roll): premium minus close_price, bucketed to date_closed week', () => {
+    // Sell 3/30 $7.25, exp 4/17, closed 4/6 for $0.50 (no roll involvement)
+    const sold = sellPut({
+      id: 'sold',
+      symbol: 'TSLA',
+      trade_ref: '50',
+      premium: 7.25,
+      contracts: 1,
+      strike: 100,
+      date_opened: '2026-03-30',
+      date_closed: '2026-04-06',
+      exp_date: '2026-04-17',
+      status: 'closed',
+      is_rolled: false,
+      close_price: 0.50,
+    });
+    const buyback = buyClose({
+      id: 'bb',
+      symbol: 'TSLA',
+      trade_ref: '50',
+      premium: 0.50,
+      contracts: 1,
+      date_opened: '2026-04-06',
+      date_closed: '2026-04-06',
+      is_rolled: false,
+    });
+
+    const out = bucketWeeklyPremium([sold, buyback], { kind: 'all-time' }, NOW);
+    expect(out).toHaveLength(1);
+    // Week of 4/6 itself is the Monday → key 2026-04-06
+    expect(ymd(out[0].weekStart)).toBe('2026-04-06');
+    // 725 - 50 = 675
+    expect(out[0].total).toBe(675);
+  });
+
+  test('held to exp, expired worthless: full premium in exp_date week', () => {
+    // Sell 3/30 $7.25, exp 4/17, expired worthless (close_price=0)
+    const sold = sellPut({
+      id: 'sold',
+      symbol: 'TSLA',
+      trade_ref: '51',
+      premium: 7.25,
+      contracts: 1,
+      strike: 100,
+      date_opened: '2026-03-30',
+      date_closed: '2026-04-17',
+      exp_date: '2026-04-17',
+      status: 'closed',
+      is_rolled: false,
+      close_price: 0,
+    });
+
+    const out = bucketWeeklyPremium([sold], { kind: 'all-time' }, NOW);
+    expect(out).toHaveLength(1);
+    expect(ymd(out[0].weekStart)).toBe('2026-04-13'); // 4/17 falls in 4/13 week
+    expect(out[0].total).toBe(725);
+  });
+});
+
 describe('bucketWeeklyPremium — stocks excluded', () => {
   test('assignment/called-away synthetic rows are NOT counted', () => {
     // Construct an assignment row directly; spec excludes them.

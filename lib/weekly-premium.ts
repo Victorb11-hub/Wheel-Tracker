@@ -8,22 +8,36 @@ import type { Trade } from '../types/trade';
 // =============================================================================
 // Weekly premium bucketing for the Dashboard chart.
 //
-// Per spec § Dashboard / Weekly Premium Collected:
-//   CLOSED leg bucketing:
-//     - Bucket date = date_closed if present, else exp_date.
-//     - If neither present: skip (don't crash).
-//     - Net premium = (premium × contracts × 100) - (close_price × contracts × 100).
-//     - is_closing_trade rows: EXCLUDED entirely (would double-count).
+// Spec — every option leg lands once, in the week of its last cash event.
+// Roll buybacks are attributed to the NEW leg only, never to the leg they
+// closed. Concretely:
 //
-//   OPEN leg bucketing:
-//     - Bucket date = exp_date.
-//     - If is_rolled: prefer calculateRollCredit; fall back to full premium when null.
-//     - Else: full premium.
-//     - Stocks: NOT swept in (Victor's rule — option legs only).
+//   CLOSING TRADES (is_closing_trade=true): excluded entirely. Their dollar
+//     impact is rolled into either the leg they closed (standalone close) or
+//     the new leg they brought into existence (roll buyback).
 //
-// Range filters return a list of week buckets (Mondays). Finite ranges
-// emit empty $0 buckets to keep the chart continuous; "all time" only
-// emits weeks that actually have data.
+//   ASSIGNMENT / CALLED-AWAY synthetic rows: not counted (option legs only).
+//
+//   OPEN legs:
+//     - Bucket = exp_date.
+//     - is_rolled with trade_ref → calculateRollCredit (= newPremium −
+//       most-recent-buyback) when available; falls back to full premium.
+//     - Otherwise → full premium.
+//
+//   CLOSED sells:
+//     - Bucket = date_closed (falls back to exp_date if missing).
+//     - Start from full premium.
+//     - Subtract the predecessor's roll buyback if this leg was created by
+//       a previous roll (i.e., is_rolled=true AND there's a closed sell
+//       with same trade_ref+symbol whose date_closed matches this leg's
+//       date_opened — that predecessor's close_price IS the buyback that
+//       attributes here).
+//     - Subtract this leg's own close_price IF the close was a standalone
+//       early close. If this leg was itself closed-by-roll (matched
+//       buyback + new opening on its date_closed), don't subtract — that
+//       buyback attributes to the new successor leg instead.
+//
+//   CLOSED buys (non-closing): contribute -premium (long puts/calls).
 // =============================================================================
 
 const SHARES_PER_CONTRACT = 100;
@@ -52,13 +66,66 @@ function closingDollars(t: Trade): number {
   return t.close_price * t.contracts * SHARES_PER_CONTRACT;
 }
 
+// True when this leg's closure was caused by a roll (matched buyback +
+// new opening sell on its date_closed, all sharing trade_ref+symbol).
+// In that case, the leg's close_price is the roll buyback that attributes
+// to the successor leg, not to this one.
+function isClosedByRoll(t: Trade, allTrades: Trade[]): boolean {
+  if (!t.is_rolled) return false;
+  if (t.status !== 'closed') return false;
+  if (t.date_closed == null) return false;
+  if (t.trade_ref == null) return false;
+
+  const buyback = allTrades.find(
+    (x) =>
+      x.is_closing_trade &&
+      x.action === 'buy' &&
+      x.trade_ref === t.trade_ref &&
+      x.symbol === t.symbol &&
+      x.date_closed === t.date_closed
+  );
+  if (!buyback) return false;
+
+  const newOpening = allTrades.find(
+    (x) =>
+      !x.is_closing_trade &&
+      x.action === 'sell' &&
+      x.is_rolled === true &&
+      x.trade_ref === t.trade_ref &&
+      x.symbol === t.symbol &&
+      x.date_opened === t.date_closed &&
+      x.id !== t.id
+  );
+  return newOpening != null;
+}
+
+// Returns the predecessor sell that was rolled into this leg (i.e., the
+// previous-roll's original whose close_price IS the buyback that brought
+// `t` into existence). null when `t` is not a roll-new-leg.
+function findRollPredecessor(t: Trade, allTrades: Trade[]): Trade | null {
+  if (!t.is_rolled) return null;
+  if (!t.trade_ref) return null;
+  return (
+    allTrades.find(
+      (x) =>
+        x.action === 'sell' &&
+        x.is_rolled === true &&
+        x.status === 'closed' &&
+        x.trade_ref === t.trade_ref &&
+        x.symbol === t.symbol &&
+        x.date_closed === t.date_opened &&
+        x.id !== t.id
+    ) ?? null
+  );
+}
+
 // Returns the bucket date (or null to skip) and the dollar amount.
 function bucketContribution(
   t: Trade,
   allTrades: Trade[]
 ): { bucketDate: string; amount: number } | null {
-  if (t.is_closing_trade) return null;          // never count closes
-  if (t.action === 'assignment' || t.action === 'called-away') return null; // synthetic rows
+  if (t.is_closing_trade) return null;
+  if (t.action === 'assignment' || t.action === 'called-away') return null;
 
   if (t.status === 'open') {
     if (!t.exp_date) return null;
@@ -73,14 +140,23 @@ function bucketContribution(
   const bucketDate = t.date_closed ?? t.exp_date;
   if (!bucketDate) return null;
 
-  // For sells: net = premium - closing cost. For buys (long puts/calls): -premium.
-  if (t.action === 'sell') {
-    return { bucketDate, amount: premiumDollars(t) - closingDollars(t) };
-  }
   if (t.action === 'buy') {
     return { bucketDate, amount: -premiumDollars(t) };
   }
-  return null;
+  if (t.action !== 'sell') return null;
+
+  let amount = premiumDollars(t);
+
+  const predecessor = findRollPredecessor(t, allTrades);
+  if (predecessor) {
+    amount -= closingDollars(predecessor);
+  }
+
+  if (!isClosedByRoll(t, allTrades)) {
+    amount -= closingDollars(t);
+  }
+
+  return { bucketDate, amount };
 }
 
 // ---- Range computation --------------------------------------------------
