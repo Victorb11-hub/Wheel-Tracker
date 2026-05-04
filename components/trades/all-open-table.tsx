@@ -9,6 +9,7 @@ import {
 } from '@/lib/calculations';
 import type { CustomAccount, StockPosition, Trade, TradeGroup } from '@/types/trade';
 import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
+import { CloseTradeModal } from './close-trade-modal';
 import { DeleteTradeModal } from './delete-trade-modal';
 import { EditTradeModal } from './edit-trade-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
@@ -47,11 +48,15 @@ export function AllOpenTable({
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [closingId, setClosingId] = useState<string | null>(null);
   const editingTrade = editingId
     ? trades.find((t) => t.id === editingId) ?? null
     : null;
   const deletingTrade = deletingId
     ? trades.find((t) => t.id === deletingId) ?? null
+    : null;
+  const closingTrade = closingId
+    ? trades.find((t) => t.id === closingId) ?? null
     : null;
 
   // Merge: open trades + held stock positions, ordered by date_opened desc.
@@ -94,6 +99,7 @@ export function AllOpenTable({
                 closedTrades={closedTrades}
                 onEdit={() => setEditingId(t.id)}
                 onDelete={() => setDeletingId(t.id)}
+                onClose={() => setClosingId(t.id)}
               />
             ))}
             {stocks.map((s) => (
@@ -121,6 +127,14 @@ export function AllOpenTable({
           if (!next) setDeletingId(null);
         }}
       />
+
+      <CloseTradeModal
+        trade={closingTrade}
+        open={closingTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setClosingId(null);
+        }}
+      />
     </>
   );
 }
@@ -130,11 +144,13 @@ function TradeRow({
   closedTrades,
   onEdit,
   onDelete,
+  onClose,
 }: {
   t: Trade;
   closedTrades: Trade[];
   onEdit: () => void;
   onDelete: () => void;
+  onClose: () => void;
 }) {
   if (t.action !== 'sell' && t.action !== 'buy') return null;
   // After this guard t is RegularLeg
@@ -185,7 +201,9 @@ function TradeRow({
             Edit
           </button>
           <button className={cn(ROW_ACTION, ACTION_HOVER.roll)}>Roll</button>
-          <button className={cn(ROW_ACTION, ACTION_HOVER.close)}>Close</button>
+          <button className={cn(ROW_ACTION, ACTION_HOVER.close)} onClick={onClose}>
+            Close
+          </button>
           {t.action === 'sell' && t.type === 'put' && (
             <button className={cn(ROW_ACTION, ACTION_HOVER.assign)}>Assign</button>
           )}

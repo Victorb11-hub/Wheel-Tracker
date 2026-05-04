@@ -16,6 +16,7 @@ import type {
 } from '@/types/trade';
 import { Button } from '@/components/ui/button';
 import { ActionBadge, RolledBadge, StatusBadge, TypeBadge } from './badges';
+import { CloseTradeModal } from './close-trade-modal';
 import { DeleteTradeModal } from './delete-trade-modal';
 import { EditTradeModal } from './edit-trade-modal';
 import { fmtDate, fmtSignedPct, fmtSignedUSD, fmtUSD } from './format';
@@ -101,11 +102,15 @@ export function AllTradesTable({
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [closingId, setClosingId] = useState<string | null>(null);
   const editingTrade = editingId
     ? trades.find((t) => t.id === editingId) ?? null
     : null;
   const deletingTrade = deletingId
     ? trades.find((t) => t.id === deletingId) ?? null
+    : null;
+  const closingTrade = closingId
+    ? trades.find((t) => t.id === closingId) ?? null
     : null;
 
   // Symbols dropdown is auto-populated from the data, sorted A→Z.
@@ -239,6 +244,7 @@ export function AllTradesTable({
                   allTrades={trades}
                   onEdit={() => setEditingId(t.id)}
                   onDelete={() => setDeletingId(t.id)}
+                  onClose={() => setClosingId(t.id)}
                 />
               ))
             )}
@@ -262,6 +268,14 @@ export function AllTradesTable({
         open={deletingTrade !== null}
         onOpenChange={(next) => {
           if (!next) setDeletingId(null);
+        }}
+      />
+
+      <CloseTradeModal
+        trade={closingTrade}
+        open={closingTrade !== null}
+        onOpenChange={(next) => {
+          if (!next) setClosingId(null);
         }}
       />
     </div>
@@ -335,11 +349,13 @@ function Row({
   allTrades,
   onEdit,
   onDelete,
+  onClose,
 }: {
   t: Trade;
   allTrades: Trade[];
   onEdit: () => void;
   onDelete: () => void;
+  onClose: () => void;
 }) {
   const cash = calculateCashRequired(t);
   const ret = calculateReturnPercent(t);
@@ -415,7 +431,9 @@ function Row({
           {t.status === 'open' && !isSynthetic && (
             <>
               <button className={cn(ROW_ACTION, ACTION_HOVER.roll)}>Roll</button>
-              <button className={cn(ROW_ACTION, ACTION_HOVER.close)}>Close</button>
+              <button className={cn(ROW_ACTION, ACTION_HOVER.close)} onClick={onClose}>
+                Close
+              </button>
             </>
           )}
           <button className={cn(ROW_ACTION, ACTION_HOVER.delete)} onClick={onDelete}>
