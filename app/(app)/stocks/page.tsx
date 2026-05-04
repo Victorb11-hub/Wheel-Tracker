@@ -1,9 +1,19 @@
+'use client';
+
 import { StockPositionCard } from '@/components/stocks/stock-position-card';
 import { fmtSignedUSD } from '@/components/trades/format';
-import { buildSeed } from '@/lib/data/seed';
+import { useFullState } from '@/lib/queries/use-state';
 
 export default function StockPositionsPage() {
-  const state = buildSeed();
+  const { data: state, isLoading } = useFullState();
+
+  if (isLoading || !state) {
+    return (
+      <div className="mt-6 rounded-lg border border-border bg-surface p-12 text-center text-sm text-text-muted">
+        Loading…
+      </div>
+    );
+  }
 
   // Holding only — called-away cycles live in Closed Groups as Full Wheel
   // Cycle groups; no duplication on this tab.

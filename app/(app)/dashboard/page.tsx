@@ -1,3 +1,5 @@
+'use client';
+
 import { AllocationCard } from '@/components/dashboard/allocation-card';
 import { AvgDTECard } from '@/components/dashboard/avg-dte-card';
 import { QuickStatsCard } from '@/components/dashboard/quick-stats';
@@ -9,10 +11,19 @@ import {
   computeQuickStats,
   computeWinRate,
 } from '@/lib/dashboard-stats';
-import { buildSeed } from '@/lib/data/seed';
+import { useFullState } from '@/lib/queries/use-state';
 
 export default function DashboardPage() {
-  const state = buildSeed();
+  const { data: state, isLoading } = useFullState();
+
+  if (isLoading || !state) {
+    return (
+      <div className="mt-6 rounded-lg border border-border bg-surface p-12 text-center text-sm text-text-muted">
+        Loading…
+      </div>
+    );
+  }
+
   // Anchor "now" to seed-today (2026-05-01) so DTE is stable in dev review.
   const now = new Date(2026, 4, 1);
 
