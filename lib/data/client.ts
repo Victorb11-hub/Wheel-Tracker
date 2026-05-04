@@ -63,4 +63,14 @@ export interface DataClient {
 
   // Optional, mock-only: re-seed from scratch. Real client throws.
   reset?(): Promise<void>;
+
+  // Bulk import: insert all entities from a parsed payload, transactionally.
+  // - On id collisions with existing entities, the importer rewrites ids and
+  //   repoints cross-references (groups[].trade_ids[],
+  //   stocks[].original_put_id, trades[].linked_stock_id) automatically.
+  // - On any error mid-write, all changes roll back.
+  // - user_id, created_at, updated_at are restamped from the destination's
+  //   current user / clock (DB-driven). Source values for those fields are
+  //   ignored.
+  bulkImport(payload: import('../import/schema').ImportPayload): Promise<void>;
 }

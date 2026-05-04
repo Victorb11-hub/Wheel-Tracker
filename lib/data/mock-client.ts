@@ -12,6 +12,7 @@ import type {
   EditTradeInput,
   FullState,
 } from './client';
+import type { ImportPayload } from '../import/schema';
 import { buildSeed, SEED_USER_ID } from './seed';
 
 // In-memory implementation of DataClient.
@@ -28,9 +29,23 @@ export class MockDataClient implements DataClient {
   private state: FullState;
   private readonly userId: string;
 
-  constructor(opts: { userId?: string } = {}) {
+  constructor(opts: { userId?: string; seed?: boolean } = {}) {
     this.userId = opts.userId ?? SEED_USER_ID;
-    this.state = buildSeed();
+    this.state = opts.seed === false ? this.makeEmptyState() : buildSeed();
+  }
+
+  private makeEmptyState(): FullState {
+    return {
+      trades: [],
+      stocks: [],
+      groups: [],
+      accounts: [],
+      prefs: {
+        user_id: this.userId,
+        theme: 'dark',
+        updated_at: new Date().toISOString(),
+      },
+    };
   }
 
   // ----- snapshots -------------------------------------------------------
@@ -183,6 +198,84 @@ export class MockDataClient implements DataClient {
   }
 
   // ----- prefs ----------------------------------------------------------
+
+  async bulkImport(payload: ImportPayload): Promise<void> {
+    const backup = this.snapshot();
+    try {
+      // Pre-allocate fresh ids for any source id that collides with an
+      // existing entity. Same prefix as the seed's id() factory keeps the
+      // namespace stable; the random suffix from newId() avoids further
+      // collisions.
+      const idRewrite = new Map<string, string>();
+      for (const t of payload.trades) {
+        if (this.state.trades.some((x) => x.id === t.id)) {
+          idRewrite.set(t.id, this.newId('t'));
+        }
+      }
+      for (const s of payload.stocks) {
+        if (this.state.stocks.some((x) => x.id === s.id)) {
+          idRewrite.set(s.id, this.newId('s'));
+        }
+      }
+      for (const g of payload.groups) {
+        if (this.state.groups.some((x) => x.id === g.id)) {
+          idRewrite.set(g.id, this.newId('g'));
+        }
+      }
+      for (const a of payload.accounts) {
+        if (this.state.accounts.some((x) => x.id === a.id)) {
+          idRewrite.set(a.id, this.newId('a'));
+        }
+      }
+      const remap = (id: string): string => idRewrite.get(id) ?? id;
+      const remapNullable = (id: string | null): string | null =>
+        id == null ? null : remap(id);
+
+      const now = new Date().toISOString();
+
+      for (const t of payload.trades) {
+        this.state.trades.push({
+          ...t,
+          id: remap(t.id),
+          linked_stock_id: remapNullable(t.linked_stock_id),
+          user_id: this.userId,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+      for (const s of payload.stocks) {
+        this.state.stocks.push({
+          ...s,
+          id: remap(s.id),
+          original_put_id: remapNullable(s.original_put_id),
+          user_id: this.userId,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+      for (const g of payload.groups) {
+        this.state.groups.push({
+          ...g,
+          id: remap(g.id),
+          trade_ids: g.trade_ids.map(remap),
+          user_id: this.userId,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+      for (const a of payload.accounts) {
+        this.state.accounts.push({
+          ...a,
+          id: remap(a.id),
+          user_id: this.userId,
+          created_at: now,
+        });
+      }
+    } catch (err) {
+      this.state = backup;
+      throw err;
+    }
+  }
 
   async setTheme(theme: ThemePref): Promise<void> {
     this.state.prefs = {

@@ -19,6 +19,8 @@ export function TopBar() {
   const [addOpen, setAddOpen] = useState(false);
   const { data: state } = useFullState();
 
+  // Kept for migration/recovery. Wire back into a menu item when needed.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function handleExportJson() {
     if (!state) return;
     const { content, filename } = exportToJson(state);
@@ -45,10 +47,13 @@ export function TopBar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {/*
+              JSON export/import are intentionally hidden from end-user
+              menus — JSON is our internal backup/migration format. Code
+              kept dormant via handleExportJson + the JSON parser/importer.
+              Re-expose under a "Recovery" or migration menu if needed.
+            */}
             <DropdownMenuLabel>Export</DropdownMenuLabel>
-            <DropdownMenuItem onSelect={handleExportJson} disabled={!state}>
-              Export → JSON
-            </DropdownMenuItem>
             <DropdownMenuItem disabled>
               Export → Excel (coming soon)
             </DropdownMenuItem>
@@ -58,7 +63,10 @@ export function TopBar() {
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Import</DropdownMenuLabel>
             <DropdownMenuItem disabled>
-              Import… (coming soon)
+              Import → Excel (coming soon)
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled>
+              Import → CSV (coming soon)
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
