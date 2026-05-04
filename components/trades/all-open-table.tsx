@@ -52,7 +52,7 @@ export function AllOpenTable({ trades, stocks, closedTrades, accounts }: Props) 
 
   return (
     <>
-      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
