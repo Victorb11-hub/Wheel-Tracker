@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -91,11 +92,8 @@ export function TopBar() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Import</DropdownMenuLabel>
-            <DropdownMenuItem disabled>
-              Import → Excel (coming soon)
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              Import → CSV (coming soon)
+            <DropdownMenuItem asChild>
+              <Link href="/import">Import…</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
